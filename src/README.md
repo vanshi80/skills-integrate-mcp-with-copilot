@@ -5,7 +5,8 @@ A super simple FastAPI application that allows students to view and sign up for 
 ## Features
 
 - View all available extracurricular activities
-- Sign up for activities
+- Teachers can sign up and unregister students after logging in
+- Students and visitors can browse activities and see who is registered
 
 ## Getting Started
 
@@ -15,22 +16,37 @@ A super simple FastAPI application that allows students to view and sign up for 
    pip install fastapi uvicorn
    ```
 
-2. Run the application:
+2. Create a teacher account. The password is stored as a PBKDF2 hash in a local
+   `teachers.json` file, which is excluded from Git:
 
    ```
-   python app.py
+   cd src
+   python create_teacher.py
    ```
 
-3. Open your browser and go to:
+3. Start the application from the `src` directory:
+
+   ```
+   uvicorn app:app --reload
+   ```
+
+4. Open your browser and go to:
    - API documentation: http://localhost:8000/docs
    - Alternative documentation: http://localhost:8000/redoc
 
 ## API Endpoints
 
-| Method | Endpoint                                                          | Description                                                         |
-| ------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
-| GET    | `/activities`                                                     | Get all activities with their details and current participant count |
-| POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
+| Method | Endpoint                                                             | Description                                             |
+| ------ | -------------------------------------------------------------------- | ------------------------------------------------------- |
+| GET    | `/activities`                                                        | Get activities and current participant counts (public) |
+| POST   | `/auth/login`                                                        | Log in as a teacher; sets an HTTP-only session cookie   |
+| GET    | `/auth/me`                                                           | Get the current teacher session                        |
+| POST   | `/auth/logout`                                                       | End the current teacher session                        |
+| POST   | `/activities/{activity_name}/signup?email=student@mergington.edu`    | Sign up a student (teacher login required)              |
+| DELETE | `/activities/{activity_name}/unregister?email=student@mergington.edu` | Unregister a student (teacher login required)           |
+
+Teacher sessions expire after eight hours and are cleared when the server
+restarts. Use HTTPS in deployments so the session cookie is marked secure.
 
 ## Data Model
 
@@ -47,4 +63,5 @@ The application uses a simple data model with meaningful identifiers:
    - Name
    - Grade level
 
-All data is stored in memory, which means data will be reset when the server restarts.
+Activity and participant data is stored in memory, so it resets when the server
+restarts. Teacher credentials are stored separately in `teachers.json`.
